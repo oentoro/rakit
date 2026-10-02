@@ -46,9 +46,20 @@ export function saveProduct(actor:Actor,id:string|null,input:z.input<typeof sche
   return productId;
  });
 }
-export function listProducts(actor:Actor):Product[]{
- assertActiveActor(actor);
- return getDatabase().prepare('SELECT p.id,p.sku,p.name,p.rack,r.name AS rackName,p.shelf,p.photo_file_id AS photoFileId,p.active FROM products p JOIN racks r ON r.id=p.rack ORDER BY p.sku').all().map(row=>{
+const productSelect='SELECT p.id,p.sku,p.name,p.rack,r.name AS rackName,p.shelf,p.photo_file_id AS photoFileId,p.active FROM products p JOIN racks r ON r.id=p.rack';
+function hydrateProducts(rows:Record<string,unknown>[]):Product[]{
+ return rows.map(row=>{
   const locations=productLocations(String(row.id));return {...row,active:!!row.active,locations,totalQuantity:locations.some(l=>l.quantity===null)?null:locations.reduce((sum,l)=>sum+(l.quantity??0),0)};
  }) as Product[];
+}
+export function listProducts(actor:Actor):Product[]{
+ assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} ORDER BY p.sku`).all());
+}
+export function paginateProducts(actor:Actor,filter:{search?:string;page?:number}={}){
+ assertActiveActor(actor);const db=getDatabase(),search=filter.search?.trim()||'',pageSize=20;
+ const where="WHERE instr(lower(p.sku || ' ' || p.name),lower(?))>0";
+ const total=Number(db.prepare(`SELECT COUNT(*) AS total FROM products p ${where}`).get(search)?.total??0),totalPages=Math.max(1,Math.ceil(total/pageSize));
+ const requested=Number.isSafeInteger(filter.page)&&filter.page!>0?filter.page!:1,page=Math.min(requested,totalPages);
+ const rows=db.prepare(`${productSelect} ${where} ORDER BY p.sku,p.id LIMIT ? OFFSET ?`).all(search,pageSize,(page-1)*pageSize);
+ return {products:hydrateProducts(rows),total,totalPages,page,pageSize};
 }

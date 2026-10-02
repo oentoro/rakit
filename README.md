@@ -51,7 +51,7 @@ Foto terkait dengan SKU, bukan order/rak. Gambar tersedia lewat endpoint teraute
 
 ## Daftar produk
 
-Admin dan staff dapat membuka **Daftar produk** untuk mencari SKU atau nama barang, melihat lokasi rak/ambalan, dan status aktif. Ketuk foto untuk melihat gambar besar beserta nama dan SKU guna mencocokkan barang. Pengelolaan produk tetap dilakukan admin melalui **Barang & lokasi**.
+Admin dan staff dapat membuka **Daftar produk** untuk mencari SKU atau nama barang, melihat lokasi rak/ambalan, dan status aktif. Daftar mengambil 20 produk per halaman dari database; gunakan **Sebelumnya/Berikutnya** untuk navigasi. Pencarian mencakup seluruh produk dan kembali ke halaman pertama saat kata pencarian diubah. Ketuk foto untuk melihat gambar besar beserta nama dan SKU guna mencocokkan barang. Pengelolaan produk tetap dilakukan admin melalui **Barang & lokasi**.
 
 ## Quantity dan beberapa lokasi per SKU
 
