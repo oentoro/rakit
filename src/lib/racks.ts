@@ -3,7 +3,7 @@ import { getDatabase,inTransaction } from './db';
 import { assertActiveActor } from './auth';
 import { databaseError,fail } from './errors';
 import { shelfLabels } from './locations';
-import type { Actor,Rack } from './types';
+import type { Actor,Rack,RackOverview } from './types';
 export { shelfLabels } from './locations';
 const schema=z.object({name:z.string().trim().min(1).max(100),shelfCount:z.number().int().min(1).max(1000)});
 export function listRacks(actor:Actor):Rack[]{
@@ -26,4 +26,12 @@ export function saveRack(actor:Actor,id:number|null,input:z.input<typeof schema>
     }catch(error){databaseError(error);}
     return id!;
   });
+}
+
+export function listRackOverview(actor:Actor):RackOverview[]{
+ const racks=listRacks(actor),db=getDatabase();
+ return racks.map(rack=>({...rack,
+  skuCount:Number(db.prepare('SELECT COUNT(DISTINCT p.id) AS n FROM product_locations l JOIN products p ON p.id=l.product_id WHERE l.rack=? AND p.active=1').get(rack.id)?.n??0),
+  occupiedShelves:db.prepare('SELECT DISTINCT l.shelf FROM product_locations l JOIN products p ON p.id=l.product_id WHERE l.rack=? AND p.active=1 ORDER BY length(l.shelf),l.shelf').all(rack.id).map(row=>String(row.shelf))
+ }));
 }

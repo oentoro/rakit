@@ -55,7 +55,7 @@ Admin dan staff dapat membuka **Daftar produk** untuk mencari SKU atau nama bara
 
 ## Quantity dan beberapa lokasi per SKU
 
-Pada **Barang & lokasi**, admin mengisi quantity fisik untuk setiap rak/ambalan. Gunakan **Tambah lokasi** untuk menyimpan SKU yang sama di beberapa tempat. SKU, nama, foto, dan QR tetap satu; setiap lokasi memiliki quantity sendiri. Daftar produk menampilkan quantity per lokasi, total, serta jumlah tersedia dan dicadangkan.
+Pada **Barang & lokasi**, Master barang menampilkan 20 produk per halaman. Pencarian dan filter rak diterapkan pada seluruh produk sebelum pagination; filter rak mencakup semua lokasi SKU. Ringkasan rak tetap menampilkan jumlah SKU aktif dan ambalan terisi dari seluruh gudang. Admin dapat mengedit barang di setiap halaman dan mengisi quantity fisik untuk setiap rak/ambalan. Gunakan **Tambah lokasi** untuk menyimpan SKU yang sama di beberapa tempat. SKU, nama, foto, dan QR tetap satu; setiap lokasi memiliki quantity sendiri. Daftar produk menampilkan quantity per lokasi, total, serta jumlah tersedia dan dicadangkan.
 
 **Scan SKU** mencatat satu unit dari lokasi asal dan mencadangkannya; quantity belum berkurang. Untuk SKU dengan beberapa lokasi, staff memilih lokasi pengambilan sebelum scan. **Scan resi untuk menyelesaikan packing** mengurangi quantity sesuai jumlah unit yang diambil dari setiap lokasi dan melepas cadangan. Retry scan atau pemindaian resi ulang tidak mengurangi stok dua kali. Order menunggu belum mencadangkan stok; ketersediaan diperiksa per unit saat picking.
 

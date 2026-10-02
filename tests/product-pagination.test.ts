@@ -18,3 +18,9 @@ test('invalid and excessive pages are normalized; empty results and inactive acc
  for(const page of [0,-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,999])expect(paginateProducts(staff,{page})).toMatchObject({page:1,total:1,totalPages:1});
  expect(paginateProducts(staff,{search:'nothing',page:99})).toMatchObject({page:1,total:0,totalPages:1,products:[]});setStaffActive(admin,staff.id,false);expect(()=>paginateProducts(staff)).toThrow();
 });
+
+test('rack filtering includes secondary locations and counts each SKU only once',()=>{
+ const {admin,staff}=fixture();for(let i=0;i<23;i++)saveProduct(admin,null,{sku:`RACK-${String(i).padStart(2,'0')}`,name:'Rak target',active:true,locations:[{rack:1,shelf:'A',quantity:2},{rack:3,shelf:'B',quantity:3},{rack:3,shelf:'C',quantity:4}]});
+ saveProduct(admin,null,{sku:'OTHER',name:'Elsewhere',rack:2,shelf:'A',active:true});
+ const result=paginateProducts(staff,{search:'rak target',rack:3,page:2});expect(result).toMatchObject({total:23,totalPages:2,page:2});expect(result.products).toHaveLength(3);expect(result.products.every(p=>p.locations.length===3)).toBe(true);expect(paginateProducts(staff,{rack:4}).total).toBe(0);
+});

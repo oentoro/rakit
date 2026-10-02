@@ -5,7 +5,7 @@ import { assertActiveActor } from './auth';
 import { getFile } from './files';
 import { databaseError,fail } from './errors';
 import { productLocations } from './inventory';
-import type { Actor,Product } from './types';
+import type { Actor,Product,ProductPage } from './types';
 const locationSchema=z.object({id:z.string().uuid().optional(),rack:z.number().int().positive(),shelf:z.string().trim().regex(/^[A-Z]+$/),quantity:z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable(),expectedQuantity:z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional()});
 const schema=z.object({sku:z.string().trim().min(1).max(100),name:z.string().trim().min(1).max(200),locations:z.array(locationSchema).min(1).max(100).optional(),rack:z.number().int().positive().optional(),shelf:z.string().trim().regex(/^[A-Z]+$/).optional(),quantity:z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional(),photoFileId:z.string().uuid().optional(),active:z.boolean()});
 export function saveProduct(actor:Actor,id:string|null,input:z.input<typeof schema>):string {
@@ -55,11 +55,12 @@ function hydrateProducts(rows:Record<string,unknown>[]):Product[]{
 export function listProducts(actor:Actor):Product[]{
  assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} ORDER BY p.sku`).all());
 }
-export function paginateProducts(actor:Actor,filter:{search?:string;page?:number}={}){
+export function paginateProducts(actor:Actor,filter:{search?:string;page?:number;rack?:number|null}={}):ProductPage{
  assertActiveActor(actor);const db=getDatabase(),search=filter.search?.trim()||'',pageSize=20;
- const where="WHERE instr(lower(p.sku || ' ' || p.name),lower(?))>0";
- const total=Number(db.prepare(`SELECT COUNT(*) AS total FROM products p ${where}`).get(search)?.total??0),totalPages=Math.max(1,Math.ceil(total/pageSize));
+ const rack=Number.isSafeInteger(filter.rack)&&(filter.rack??0)>0?filter.rack!:null;
+ const where="WHERE instr(lower(p.sku || ' ' || p.name),lower(?))>0 AND (? IS NULL OR EXISTS(SELECT 1 FROM product_locations l WHERE l.product_id=p.id AND l.rack=?))";
+ const total=Number(db.prepare(`SELECT COUNT(*) AS total FROM products p ${where}`).get(search,rack,rack)?.total??0),totalPages=Math.max(1,Math.ceil(total/pageSize));
  const requested=Number.isSafeInteger(filter.page)&&filter.page!>0?filter.page!:1,page=Math.min(requested,totalPages);
- const rows=db.prepare(`${productSelect} ${where} ORDER BY p.sku,p.id LIMIT ? OFFSET ?`).all(search,pageSize,(page-1)*pageSize);
+ const rows=db.prepare(`${productSelect} ${where} ORDER BY p.sku,p.id LIMIT ? OFFSET ?`).all(search,rack,rack,pageSize,(page-1)*pageSize);
  return {products:hydrateProducts(rows),total,totalPages,page,pageSize};
 }
