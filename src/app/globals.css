@@ -278,3 +278,11 @@ a, button, input, select { touch-action: manipulation; }
 .camera-feed{position:absolute;inset:0;width:100%;height:100%;}
 
 .mobile-logout{display:none;}@media(max-width:900px){.mobile-logout{display:inline-flex;}}
+
+.photo-trigger {position:relative;cursor:zoom-in;}
+.photo-trigger:focus-visible {outline:2px solid #368564;outline-offset:3px;}
+.photo-zoom-icon {position:absolute;right:3px;bottom:3px;background:white;border-radius:3px;color:#368564;}
+.photo-preview {position:fixed;inset:0;margin:auto;padding:0;width:min(900px,calc(100vw - 32px));max-height:calc(100dvh - 32px);border:0;border-radius:14px;background:transparent;overflow:auto;}
+.photo-preview::backdrop {background:rgb(0 0 0 / 75%);}
+.photo-preview-content {background:white;}
+.photo-preview-image {display:block;width:100%;height:min(65dvh,700px);object-fit:contain;background:#f5f8f5;}
