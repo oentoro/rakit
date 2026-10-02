@@ -1,0 +1,12 @@
+"use client";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Layers3,ArrowRight,ScanLine,MapPin,PackageCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { api } from '@/lib/client';
+export default function Login(){
+ const router=useRouter();const [error,setError]=useState(''),[busy,setBusy]=useState(false);
+ return <main className="login-layout"><section className="login-story"><div className="brand text-white"><span className="brand-mark"><Layers3 className="size-6"/></span><span>rakit.</span></div><div><span className="eyebrow text-emerald-300">OPERASIONAL LEBIH TERATUR</span><h1>Setiap barang,<br/>di tempat yang tepat.</h1><p>Satu alur sederhana untuk picking, packing,<br className="hidden md:block"/> dan order yang siap dikirim.</p><div className="login-features"><span><MapPin/>Lokasi jelas</span><span><ScanLine/>Scan praktis</span><span><PackageCheck/>Packing tuntas</span></div></div><span className="text-xs text-white/50">Dibuat untuk tim gudang Anda.</span></section><section className="login-form"><div className="w-full max-w-sm"><span className="eyebrow">SELAMAT DATANG</span><h2 className="mt-3 text-3xl font-semibold tracking-tight">Masuk ke workspace</h2><p className="mb-8 mt-2 text-sm text-muted-foreground">Gunakan akun yang diberikan admin gudang.</p><form onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const data=new FormData(e.currentTarget);try{await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:data.get('username'),password:data.get('password')})});router.replace('/');router.refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}} className="space-y-5"><div><Label htmlFor="username">Username</Label><Input id="username" name="username" placeholder="Username Anda" autoComplete="username" required className="mt-2 h-11"/></div><div><Label htmlFor="password">Password</Label><Input id="password" name="password" type="password" placeholder="Masukkan password" autoComplete="current-password" required className="mt-2 h-11"/></div>{error&&<p className="notice error" role="alert">{error}</p>}<Button type="submit" disabled={busy} className="h-11 w-full">{busy?'Memeriksa akun…':'Masuk ke gudang'}<ArrowRight/></Button></form><p className="mt-7 text-center text-xs text-muted-foreground">Belum punya akun? Hubungi admin gudang.</p></div></section></main>;
+}

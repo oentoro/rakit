@@ -1,0 +1,3 @@
+import { defineConfig } from '@playwright/test';
+const testDb=process.env.E2E_DATABASE_PATH||=`/tmp/picking-e2e-${Date.now()}.sqlite`;
+export default defineConfig({testDir:'./tests/e2e',workers:1,use:{baseURL:'http://127.0.0.1:3010',browserName:'chromium',launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROME||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'},trace:'retain-on-failure'},webServer:{command:'npm run dev -- --port 3010',url:'http://127.0.0.1:3010/login',reuseExistingServer:false,env:{DATABASE_PATH:testDb,UPLOAD_DIR:'/tmp/picking-e2e-uploads',APP_ORIGIN:'http://127.0.0.1:3010',GEMINI_API_KEY:'',GEMINI_MODEL:'',COOKIE_SECURE:'false'},timeout:120000}});

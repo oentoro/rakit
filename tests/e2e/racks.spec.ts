@@ -1,0 +1,15 @@
+import { test,expect } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
+test.beforeAll(()=>{execFileSync('node',['--import','tsx','scripts/demo.ts'],{env:{...process.env,DATABASE_PATH:process.env.E2E_DATABASE_PATH,UPLOAD_DIR:'/tmp/picking-e2e-uploads',DEMO_PASSWORD:'testpassword123'},stdio:'pipe'});});
+test('admin adds and edits shelves; occupied shelves cannot be removed',async({page})=>{
+ await page.goto('/login');await page.getByLabel('Username').fill('admin.demo');await page.getByLabel('Password',{exact:true}).fill('testpassword123');await page.getByRole('button',{name:'Masuk ke gudang'}).click();await expect(page.getByRole('heading',{name:'Ringkasan gudang'})).toBeVisible();
+ await page.goto('/admin/products');await page.getByText('Kelola rak',{exact:true}).click();
+ await page.getByLabel('Nama rak',{exact:true}).fill('Rak Utara');await page.getByLabel('Jumlah ambalan').fill('8');await page.getByRole('button',{name:'Simpan rak',exact:true}).click();await expect(page.getByRole('button',{name:'Edit Rak Utara · 8 ambalan',exact:true})).toBeVisible();
+ await page.getByLabel('SKU produk').fill('RACK-TEST');await page.getByLabel('Nama barang',{exact:true}).fill('Barang ambalan H');await page.getByLabel('Rak',{exact:true}).selectOption({label:'Rak Utara'});await page.getByLabel('Ambalan',{exact:true}).selectOption('H');await page.getByRole('button',{name:'Simpan barang'}).click();await expect(page.getByRole('button').filter({hasText:'Barang ambalan H'})).toContainText('Rak Utara · H');
+ await page.getByRole('button',{name:'Edit Rak Utara · 8 ambalan',exact:true}).click();await page.getByLabel('Nama rak',{exact:true}).fill('Rak Depan');await page.getByRole('button',{name:'Simpan rak',exact:true}).click();await expect(page.getByRole('button').filter({hasText:'Barang ambalan H'})).toContainText('Rak Depan · H');
+ await page.getByRole('button',{name:'Edit Rak Depan · 8 ambalan',exact:true}).click();await page.getByLabel('Jumlah ambalan').fill('6');await page.getByRole('button',{name:'Simpan rak',exact:true}).click();await expect(page.getByRole('alert').filter({hasText:'masih ditempati'})).toContainText('masih ditempati');
+ await page.getByRole('button').filter({hasText:'Barang ambalan H'}).click();await page.getByLabel('Ambalan',{exact:true}).selectOption('A');await page.getByRole('button',{name:'Simpan barang'}).click();await expect(page.getByRole('button').filter({hasText:'Barang ambalan H'})).toContainText('Rak Depan · A');
+ await page.getByRole('button',{name:'Simpan rak',exact:true}).click();await expect(page.getByRole('button',{name:'Edit Rak Depan · 6 ambalan',exact:true})).toBeVisible();
+ await page.getByRole('button').filter({hasText:'Barang ambalan H'}).click();await expect(page.getByLabel('Ambalan',{exact:true}).locator('option')).toHaveCount(6);await expect(page.getByText('5 RAK · 30 AMBALAN',{exact:true})).toBeVisible();
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/picking-racks-mobile.png',fullPage:true});
+});

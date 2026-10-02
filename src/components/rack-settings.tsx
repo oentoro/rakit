@@ -1,0 +1,12 @@
+"use client";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { api } from '@/lib/client';
+import type { Rack } from '@/lib/types';
+export function RackSettings({racks}:{racks:Rack[]}){
+ const router=useRouter(),[editing,setEditing]=useState<Rack|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState(''),[formKey,setFormKey]=useState(0);
+ return <details className="surface mb-6"><summary className="cursor-pointer p-5 font-semibold">Kelola rak</summary><div className="p-5 pt-0"><p className="mb-4 text-sm text-muted-foreground">Atur nama rak dan jumlah ambalan. Pindahkan barang dari ambalan yang akan dihapus terlebih dahulu.</p><div className="mb-5 flex flex-wrap gap-2">{racks.map(r=><Button key={r.id} variant={editing?.id===r.id?'default':'outline'} onClick={()=>{setEditing(r);setFormKey(k=>k+1);setError('');setSuccess('');}}>Edit {r.name} · {r.shelfCount} ambalan</Button>)}<Button variant="outline" onClick={()=>{setEditing(null);setFormKey(k=>k+1);setError('');setSuccess('');}}>Tambah rak</Button></div><form key={formKey} onSubmit={async e=>{e.preventDefault();const data=new FormData(e.currentTarget);setBusy(true);setError('');setSuccess('');try{await api(editing?`/api/racks/${editing.id}`:'/api/racks',{method:editing?'PATCH':'POST',body:JSON.stringify({name:data.get('name'),shelfCount:Number(data.get('shelfCount'))})});setSuccess('Rak berhasil disimpan.');setEditing(null);setFormKey(k=>k+1);router.refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}} className="flex flex-wrap items-end gap-4"><div className="flex-1 min-w-48"><Label htmlFor="rack-name">Nama rak</Label><Input id="rack-name" name="name" required maxLength={100} defaultValue={editing?.name} placeholder="Contoh: Rak Utara" className="mt-2"/></div><div><Label htmlFor="shelf-count">Jumlah ambalan</Label><Input id="shelf-count" name="shelfCount" type="number" min={1} max={1000} step={1} required defaultValue={editing?.shelfCount??6} className="mt-2 w-40"/></div><Button disabled={busy} type="submit">{busy?'Menyimpan…':'Simpan rak'}</Button></form>{error&&<p className="notice error mt-4" role="alert">{error}</p>}{success&&<p className="notice success mt-4" role="status">{success}</p>}</div></details>;
+}
