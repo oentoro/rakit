@@ -3,6 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import { z } from 'zod';
 import { assertActiveActor } from './auth';
 import { getDatabase,inTransaction } from './db';
+import { productLocations } from './inventory';
 import { getFile,readAuthorizedFile } from './files';
 import { databaseError,fail } from './errors';
 import type { Actor,OrderInput,OrderDetail,Status } from './types';
@@ -47,7 +48,7 @@ export function getOrder(actor:Actor,id:string):OrderDetail {
   const row=db.prepare('SELECT o.id,o.order_number AS orderNumber,o.airway_bill AS airwayBill,o.status,o.assignee_id AS assigneeId,u.name AS assigneeName,o.pdf_file_id AS pdfFileId,o.receipt_pages AS receiptPages,o.created_at AS createdAt,o.completed_at AS completedAt FROM orders o LEFT JOIN users u ON u.id=o.assignee_id WHERE o.id=?').get(id);
   if(!row) fail(404,'Order tidak ditemukan.');
   const items=db.prepare('SELECT i.product_id AS productId,i.sku,i.name,i.qty,i.picked_qty AS pickedQty,p.rack,r.name AS rackName,p.shelf,p.photo_file_id AS photoFileId FROM order_items i JOIN products p ON p.id=i.product_id JOIN racks r ON r.id=p.rack WHERE i.order_id=? ORDER BY p.rack,length(p.shelf),p.shelf,i.sku').all(id);
-  return {...row,receiptPages:JSON.parse(row.receiptPages as string),items:items.map(item=>({...item}))} as OrderDetail;
+  return {...row,receiptPages:JSON.parse(row.receiptPages as string),items:items.map(item=>({...item,locations:productLocations(String(item.productId),id)}))} as OrderDetail;
 }
 export function listOrders(actor:Actor,filter:{status?:Status;search?:string}={}):OrderDetail[] {
   assertActiveActor(actor);const query=filter.search?.trim()||'';

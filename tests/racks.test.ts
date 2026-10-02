@@ -17,7 +17,7 @@ test('existing four racks default to six shelves; new rack accepts its own shelf
 });
 
 test('rack rename and shelf expansion update current order instructions without erasing picked qty',()=>{
-  const {admin,staff}=fixture();const productId=saveProduct(admin,null,{sku:'A',name:'Barang',rack:1,shelf:'B',active:true});
+  const {admin,staff}=fixture();const productId=saveProduct(admin,null,{sku:'A',name:'Barang',rack:1,shelf:'B',quantity:10,active:true});
   const orderId=createOrder(admin,{orderNumber:'LOCATION',receiptPages:[],items:[{productId,qty:2}]});claimOrder(staff,orderId);
   scanOrder(staff,orderId,{kind:'sku',code:'A',requestId:randomUUID()});
   saveRack(admin,1,{name:'Rak Depan',shelfCount:8});

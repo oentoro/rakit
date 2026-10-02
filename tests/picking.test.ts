@@ -9,7 +9,7 @@ import { claimOrder,scanOrder,reassignOrder } from '../src/lib/picking';
 import { createStaff,setStaffActive } from '../src/lib/auth';
 import { getDatabase } from '../src/lib/db';
 async function setup(){
- const ctx=fixture();const productId=saveProduct(ctx.admin,null,{sku:'001A',name:'A',rack:1,shelf:'B',active:true});
+ const ctx=fixture();const productId=saveProduct(ctx.admin,null,{sku:'001A',name:'A',rack:1,shelf:'B',quantity:10,active:true});
  const pdf=await PDFDocument.create();pdf.addPage();const file=await storeUpload(ctx.admin,new File([new Uint8Array(await pdf.save())],'r.pdf',{type:'application/pdf'}),'pdf');
  const input={orderNumber:'O',airwayBill:'0001',pdfFileId:file.id,receiptPages:[1],items:[{productId,qty:2}]};return {...ctx,id:createOrder(ctx.admin,input),input};
 }

@@ -21,7 +21,7 @@ export function reassignOrder(actor:Actor,id:string,staffId:string):OrderDetail 
     getDatabase().prepare('UPDATE orders SET assignee_id=?,updated_at=? WHERE id=?').run(staffId,Date.now(),id);recordActivity(actor,id,`Dialihkan ke ${target.name}`);return getOrder(actor,id);
   });
 }
-const scanSchema=z.object({kind:z.enum(['sku','airwayBill']),code:z.string().trim().min(1).max(100),requestId:z.string().uuid()});
+const scanSchema=z.object({kind:z.enum(['sku','airwayBill']),code:z.string().trim().min(1).max(100),requestId:z.string().uuid(),locationId:z.string().uuid().optional()});
 export function scanOrder(actor:Actor,id:string,input:z.input<typeof scanSchema>):ScanResult {
   const data=scanSchema.parse(input);
   return inTransaction(()=>{
@@ -29,7 +29,7 @@ export function scanOrder(actor:Actor,id:string,input:z.input<typeof scanSchema>
     if(order.assigneeId!==actor.id) fail(403,'Order ini bukan penugasan Anda. Minta admin mengalihkan order bila diperlukan.');
     const prior=db.prepare('SELECT * FROM scan_requests WHERE request_id=?').get(data.requestId);
     if(prior) {
-      if(prior.order_id!==id||prior.actor_id!==actor.id||prior.kind!==data.kind||prior.code!==data.code) fail(409,'ID scan telah digunakan untuk permintaan lain.');
+      if(prior.order_id!==id||prior.actor_id!==actor.id||prior.kind!==data.kind||prior.code!==data.code||prior.location_id!==(data.locationId??null)) fail(409,'ID scan telah digunakan untuk permintaan lain.');
       return {order,message:prior.result as string,replayed:true};
     }
     let message:string;let replayed=false;
@@ -37,23 +37,41 @@ export function scanOrder(actor:Actor,id:string,input:z.input<typeof scanSchema>
       if(order.status!=='picking') fail(409,'Order tidak dalam proses picking.');
       const item=order.items.find(i=>i.sku===data.code);if(!item) fail(422,'SKU tidak sesuai dengan barang dalam order.');
       if(item.pickedQty>=item.qty) fail(409,'Jumlah barang ini sudah lengkap.');
+      const location=data.locationId?item.locations.find(l=>l.id===data.locationId):item.locations.length===1?item.locations[0]:undefined;
+      if(!location)fail(422,'Pilih lokasi rak/ambalan asal barang sebelum scan SKU.');
+      if(location.availableQuantity===null)fail(409,'Quantity lokasi belum diisi. Minta admin mengisi stok terlebih dahulu.');
+      if(location.availableQuantity<1)fail(409,'Stok tersedia di lokasi ini habis atau sudah dicadangkan order lain. Pilih lokasi lain.');
+      db.prepare('INSERT INTO order_location_picks(order_id,product_id,location_id,quantity) VALUES(?,?,?,1) ON CONFLICT(order_id,product_id,location_id) DO UPDATE SET quantity=quantity+1').run(id,item.productId,location.id);
       const changed=db.prepare('UPDATE order_items SET picked_qty=picked_qty+1 WHERE order_id=? AND product_id=? AND picked_qty<qty').run(id,item.productId);
       if(changed.changes!==1) fail(409,'Jumlah barang sudah lengkap. Muat ulang order.');
       const pending=db.prepare('SELECT COUNT(*) n FROM order_items WHERE order_id=? AND picked_qty<qty').get(id) as {n:number};
       if(!pending.n) db.prepare("UPDATE orders SET status='packing',updated_at=? WHERE id=?").run(Date.now(),id);
-      recordActivity(actor,id,'Barang diambil',data.code);message=`${item.name}: +1 unit${!pending.n?' • Picking lengkap, lanjut packing.':''}`;
+      recordActivity(actor,id,`Barang diambil • ${location.rackName}/${location.shelf}`,data.code);message=`${item.name}: +1 unit${!pending.n?' • Picking lengkap, lanjut packing.':''}`;
     } else {
       if(!order.airwayBill||data.code!==order.airwayBill) fail(422,'Nomor resi tidak sesuai dengan order.');
       if(order.status==='completed') {message='Order ini sudah selesai.';replayed=true;}
       else {
         if(order.status!=='packing'||order.items.some(i=>i.pickedQty!==i.qty)) fail(409,'Lengkapi picking sebelum scan resi.');
         if(!order.pdfFileId||!order.receiptPages.length) fail(422,'PDF resi belum lengkap. Minta admin melengkapinya.');
-        getFile(order.pdfFileId,'pdf');const now=Date.now();
+        getFile(order.pdfFileId,'pdf');
+        const allocations=db.prepare('SELECT p.product_id,p.location_id,p.quantity,l.rack,l.shelf,r.name AS rack_name FROM order_location_picks p JOIN product_locations l ON l.id=p.location_id JOIN racks r ON r.id=l.rack WHERE p.order_id=?').all(id);
+        for(const item of order.items){
+          const allocated=allocations.filter(a=>a.product_id===item.productId).reduce((sum,a)=>sum+Number(a.quantity),0);
+          if(allocated!==item.qty)fail(409,'Lokasi barang yang diambil belum lengkap. Muat ulang dan periksa picking.');
+        }
+        for(const allocation of allocations){
+          const changed=db.prepare('UPDATE product_locations SET quantity=quantity-? WHERE id=? AND quantity IS NOT NULL AND quantity>=?').run(allocation.quantity,allocation.location_id,allocation.quantity);
+          if(changed.changes!==1)fail(409,'Stok lokasi belum cukup atau belum diisi. Minta admin memeriksa quantity sebelum packing.');
+          const item=order.items.find(i=>i.productId===allocation.product_id)!;
+          recordActivity(actor,id,`Stok dikurangi • ${allocation.rack_name}/${allocation.shelf} • ${allocation.quantity} unit`,item.sku);
+        }
+        db.prepare('DELETE FROM order_location_picks WHERE order_id=?').run(id);
+        const now=Date.now();
         db.prepare("UPDATE orders SET status='completed',completed_at=?,updated_at=? WHERE id=? AND status='packing'").run(now,now,id);
         recordActivity(actor,id,'Packing selesai');message='Packing selesai. Order siap dikirim.';
       }
     }
-    db.prepare('INSERT INTO scan_requests VALUES(?,?,?,?,?,?)').run(data.requestId,id,actor.id,data.kind,data.code,message);
+    db.prepare('INSERT INTO scan_requests(request_id,order_id,actor_id,kind,code,result,location_id) VALUES(?,?,?,?,?,?,?)').run(data.requestId,id,actor.id,data.kind,data.code,message,data.locationId??null);
     return {order:getOrder(actor,id),message,replayed};
   });
 }

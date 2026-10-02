@@ -14,6 +14,7 @@ test('legacy rack migration preserves products, photos, order items, picking pro
   expect(db.prepare('SELECT name,shelf_count FROM racks WHERE id=4').get()).toMatchObject({name:'Rak 4',shelf_count:6});
   expect(db.prepare('SELECT * FROM products').get()).toMatchObject({id:'product',rack:4,shelf:'F',photo_file_id:'photo'});
   expect(db.prepare('SELECT * FROM order_items').get()).toMatchObject({qty:2,picked_qty:1});
+  expect(db.prepare('SELECT * FROM product_locations').get()).toMatchObject({product_id:'product',rack:4,shelf:'F',quantity:null});expect(db.prepare('SELECT * FROM order_location_picks').get()).toMatchObject({order_id:'order',quantity:1});
   expect(db.prepare('SELECT status FROM orders').get()).toMatchObject({status:'picking'});
   expect(db.prepare('SELECT result FROM scan_requests').get()).toMatchObject({result:'OK'});expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   db.close();const reopened=openDatabase(path);expect(reopened.prepare('SELECT COUNT(*) n FROM racks').get()).toMatchObject({n:4});expect(reopened.prepare('SELECT picked_qty FROM order_items').get()).toMatchObject({picked_qty:1});reopened.close();

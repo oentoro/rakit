@@ -1,13 +1,14 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { migrateRacks } from './migrations';
+import { migrateRacks,migrateInventory } from './migrations';
 const cache = globalThis as typeof globalThis & { warehouseDb?: {path:string;db:DatabaseSync} };
 export function openDatabase(path:string):DatabaseSync {
   if(path!==':memory:') mkdirSync(dirname(resolve(path)),{recursive:true});
   const db=new DatabaseSync(path);
   db.exec(readFileSync(resolve('src/lib/schema.sql'),'utf8'));
   migrateRacks(db);
+  migrateInventory(db);
   return db;
 }
 export function getDatabase():DatabaseSync {

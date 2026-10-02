@@ -36,3 +36,11 @@ test('late camera permission after close never attaches stale stream or clears a
  fireEvent.click(screen.getByRole('button',{name:'Tutup kamera'}));camera.defer=false;fireEvent.click(screen.getByRole('button',{name:'Aktifkan kamera'}));await waitFor(()=>expect(camera.callback).toBeDefined());const newStream=camera.attachments[0];
  const stop=vi.fn();const oldStream={getTracks:()=>[{stop}]} as unknown as MediaStream;resolveOld(oldStream);await waitFor(()=>expect(stop).toHaveBeenCalled());expect(camera.attachments).not.toContain(oldStream);expect((screen.getByLabelText('Pratinjau kamera') as HTMLVideoElement).srcObject).toBe(newStream);
 });
+
+test('network retry keeps the original location even after selection changes and reload',async()=>{
+ const locations:(string|undefined)[]=[];let first=true;
+ const onScan=async(_code:string,_id:string,locationId?:string)=>{locations.push(locationId);if(first){first=false;throw new TypeError('Network');}return {message:'Tersimpan'};};
+ const view=render(<CameraScanner kind="sku" storageKey="location-test" locationBySku={{'001A':'first-location'}} onScan={onScan}/>);
+ fireEvent.change(screen.getByLabelText('Kode manual'),{target:{value:'001A'}});fireEvent.click(screen.getByRole('button',{name:'Kirim kode'}));await screen.findByRole('button',{name:'Coba ulang scan'});
+ view.unmount();render(<CameraScanner kind="sku" storageKey="location-test" locationBySku={{'001A':'other-location'}} onScan={onScan}/>);fireEvent.click(screen.getByRole('button',{name:'Coba ulang scan'}));await screen.findByText('Tersimpan');expect(locations).toEqual(['first-location','first-location']);
+});

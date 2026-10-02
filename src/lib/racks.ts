@@ -15,7 +15,7 @@ export function saveRack(actor:Actor,id:number|null,input:z.input<typeof schema>
     assertActiveActor(actor,['admin']);const data=schema.parse(input),db=getDatabase(),labels=shelfLabels(data.shelfCount);
     if(id!==null&&!db.prepare('SELECT id FROM racks WHERE id=?').get(id))fail(404,'Rak tidak ditemukan.');
     if(id!==null){
-      const occupied=db.prepare('SELECT sku,shelf FROM products WHERE rack=?').all(id).find(row=>!labels.includes(String(row.shelf)));
+      const occupied=db.prepare('SELECT p.sku,l.shelf FROM product_locations l JOIN products p ON p.id=l.product_id WHERE l.rack=?').all(id).find(row=>!labels.includes(String(row.shelf)));
       if(occupied)fail(409,`Ambalan ${occupied.shelf} masih ditempati SKU ${occupied.sku}. Pindahkan barang sebelum mengurangi ambalan.`);
     }
     try{

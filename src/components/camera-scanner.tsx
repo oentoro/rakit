@@ -5,12 +5,13 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { ApiError } from '@/lib/client';
-type Pending={code:string;requestId:string};
-type Props={kind:'sku'|'airwayBill';storageKey?:string;onScan:(code:string,requestId:string)=>Promise<{message:string}>};
-export function CameraScanner({kind,onScan,storageKey='scanner'}:Props) {
+type Pending={code:string;requestId:string;locationId?:string};
+type Props={kind:'sku'|'airwayBill';storageKey?:string;locationBySku?:Record<string,string>;onScan:(code:string,requestId:string,locationId?:string)=>Promise<{message:string}>};
+export function CameraScanner({kind,onScan,storageKey='scanner',locationBySku={}}:Props) {
   const [open,setOpen]=useState(false);const [phase,setPhase]=useState<'idle'|'starting'|'ready'|'sending'|'paused'|'uncertain'>('idle');
   const [message,setMessage]=useState('');const [error,setError]=useState('');const [manual,setManual]=useState('');
   const feed=useRef<HTMLDivElement>(null);const stream=useRef<MediaStream|null>(null);const controls=useRef<{stop:()=>void}|null>(null);const mounted=useRef(true);const armed=useRef(true);const inflight=useRef(false);const pending=useRef<Pending|null>(null);const generation=useRef(0);
+  const selectedLocations=useRef(locationBySku);selectedLocations.current=locationBySku;
   const callback=useRef(onScan);callback.current=onScan;const key=`rakit-scan:${storageKey}:${kind}`;
   function stopCamera() {generation.current++;controls.current?.stop();controls.current=null;stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;feed.current?.replaceChildren();}
   useEffect(()=>{
@@ -21,7 +22,7 @@ export function CameraScanner({kind,onScan,storageKey='scanner'}:Props) {
     if(inflight.current)return;inflight.current=true;armed.current=false;pending.current=scan;setPhase('sending');setMessage('');setError('');
     try {sessionStorage.setItem(key,JSON.stringify(scan));}catch{}
     try {
-      const result=await callback.current(scan.code,scan.requestId);pending.current=null;try{sessionStorage.removeItem(key);}catch{}
+      const result=await callback.current(scan.code,scan.requestId,scan.locationId);pending.current=null;try{sessionStorage.removeItem(key);}catch{}
       if(mounted.current){setMessage(result.message);setPhase('paused');setManual('');}
     } catch(cause) {
       const known=cause instanceof ApiError&&cause.status<500;
@@ -39,7 +40,7 @@ export function CameraScanner({kind,onScan,storageKey='scanner'}:Props) {
       if(!mounted.current||current!==generation.current){acquired.getTracks().forEach(t=>t.stop());return;}
       stream.current=acquired;const target=document.createElement('video');target.muted=true;target.playsInline=true;target.setAttribute('aria-label','Pratinjau kamera');feed.current?.replaceChildren(target);
       const reader=new BrowserMultiFormatReader();const active=await reader.decodeFromStream(acquired,target,(result)=>{
-        if(result&&mounted.current&&current===generation.current&&armed.current&&!inflight.current&&!pending.current){armed.current=false;void send({code:result.getText().trim(),requestId:crypto.randomUUID()});}
+        if(result&&mounted.current&&current===generation.current&&armed.current&&!inflight.current&&!pending.current){armed.current=false;void send({code:result.getText().trim(),requestId:crypto.randomUUID(),locationId:selectedLocations.current[result.getText().trim()]||undefined});}
       });
       if(!mounted.current||current!==generation.current){active.stop();acquired.getTracks().forEach(t=>t.stop());return;}controls.current=active;if(armed.current)setPhase('ready');
     } catch(cause) {
@@ -59,6 +60,6 @@ export function CameraScanner({kind,onScan,storageKey='scanner'}:Props) {
       {phase==='sending'&&<span className="flex items-center gap-2 text-sm"><LoaderCircle className="size-4 animate-spin"/>Menyimpan scan…</span>}
     </div>
     {message&&<p role="status" className="notice success mt-3">{message}</p>}{error&&<p role="alert" className="notice error mt-3">{error}</p>}
-    <form className="mt-5 border-t pt-4" onSubmit={e=>{e.preventDefault();if(!blocked&&manual.trim())void send({code:manual.trim(),requestId:crypto.randomUUID()});}}><Label htmlFor={`manual-${kind}`} className="mb-2"><Keyboard className="size-4"/>Kode manual</Label><div className="flex gap-2"><Input id={`manual-${kind}`} value={manual} onChange={e=>setManual(e.target.value)} placeholder={kind==='sku'?'Masukkan SKU jika kamera gagal':'Masukkan nomor airway bill'} disabled={blocked} autoComplete="off" className="h-11"/><Button type="submit" variant="outline" disabled={blocked||!manual.trim()} className="h-11">Kirim kode<ArrowRight/></Button></div></form>
+    <form className="mt-5 border-t pt-4" onSubmit={e=>{e.preventDefault();if(!blocked&&manual.trim())void send({code:manual.trim(),requestId:crypto.randomUUID(),locationId:selectedLocations.current[manual.trim()]||undefined});}}><Label htmlFor={`manual-${kind}`} className="mb-2"><Keyboard className="size-4"/>Kode manual</Label><div className="flex gap-2"><Input id={`manual-${kind}`} value={manual} onChange={e=>setManual(e.target.value)} placeholder={kind==='sku'?'Masukkan SKU jika kamera gagal':'Masukkan nomor airway bill'} disabled={blocked} autoComplete="off" className="h-11"/><Button type="submit" variant="outline" disabled={blocked||!manual.trim()} className="h-11">Kirim kode<ArrowRight/></Button></div></form>
   </section>;
 }

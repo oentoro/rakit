@@ -43,8 +43,8 @@ Untuk membaca PDF dengan AI, isi `GEMINI_API_KEY` dan `GEMINI_MODEL`, lalu mulai
 2. Admin membuat order manual atau upload PDF. Hasil AI adalah draf: admin memeriksa nomor order/resi, memetakan SKU, mengoreksi qty, dan memilih halaman resi sebelum menyimpan. Satu PDF dapat berisi beberapa order.
 3. Saat pembacaan AI gagal, PDF tetap tersedia untuk diisi secara manual. Resi/PDF boleh dilengkapi kemudian pada order manual.
 4. Staff mengambil order yang menunggu. Penugasan mencegah dua staff mengambil order yang sama.
-5. Staff melihat foto dan lokasi, mengambil satu unit, lalu scan QR berisi SKU. Kode salah dan qty berlebih ditolak. Setelah scan, tekan **Scan unit berikutnya** untuk rearm kamera. QR yang terus terlihat tidak dihitung berulang.
-6. Seluruh qty lengkap mengubah status menjadi Packing. Buka/cetak PDF resi, tempelkan pada paket, lalu scan barcode airway bill untuk menyelesaikan.
+5. Staff melihat foto dan lokasi, memilih rak/ambalan asal bila SKU memiliki beberapa lokasi, mengambil satu unit, lalu scan QR berisi SKU. Unit yang diambil dicadangkan agar order lain tidak menggunakan stok yang sama. Kode salah dan qty berlebih ditolak. Setelah scan, tekan **Scan unit berikutnya** untuk rearm kamera. QR yang terus terlihat tidak dihitung berulang.
+6. Seluruh qty lengkap mengubah status menjadi Packing. Buka/cetak PDF resi, tempelkan pada paket, lalu scan barcode airway bill untuk menyelesaikan. Quantity stok setiap lokasi asal baru dikurangi pada tahap ini, dalam transaksi yang sama.
 7. Server mencatat pelaku/waktu dan aktivitas. Admin bisa mengalihkan penanggung jawab. Perubahan lokasi SKU ditampilkan setelah staff memuat ulang lokasi, tanpa mengubah progres.
 
 Foto terkait dengan SKU, bukan order/rak. Gambar tersedia lewat endpoint terautentikasi. PDF maksimal 15 MB; foto JPEG/PNG/WebP maksimal 5 MB. Nomor order, airway bill, dan SKU unik; nol awal dan kapitalisasi kode dipertahankan.
@@ -52,6 +52,16 @@ Foto terkait dengan SKU, bukan order/rak. Gambar tersedia lewat endpoint teraute
 ## Daftar produk
 
 Admin dan staff dapat membuka **Daftar produk** untuk mencari SKU atau nama barang, melihat lokasi rak/ambalan, dan status aktif. Ketuk foto untuk melihat gambar besar beserta nama dan SKU guna mencocokkan barang. Pengelolaan produk tetap dilakukan admin melalui **Barang & lokasi**.
+
+## Quantity dan beberapa lokasi per SKU
+
+Pada **Barang & lokasi**, admin mengisi quantity fisik untuk setiap rak/ambalan. Gunakan **Tambah lokasi** untuk menyimpan SKU yang sama di beberapa tempat. SKU, nama, foto, dan QR tetap satu; setiap lokasi memiliki quantity sendiri. Daftar produk menampilkan quantity per lokasi, total, serta jumlah tersedia dan dicadangkan.
+
+**Scan SKU** mencatat satu unit dari lokasi asal dan mencadangkannya; quantity belum berkurang. Untuk SKU dengan beberapa lokasi, staff memilih lokasi pengambilan sebelum scan. **Scan resi untuk menyelesaikan packing** mengurangi quantity sesuai jumlah unit yang diambil dari setiap lokasi dan melepas cadangan. Retry scan atau pemindaian resi ulang tidak mengurangi stok dua kali. Order menunggu belum mencadangkan stok; ketersediaan diperiksa per unit saat picking.
+
+Admin dapat mengoreksi quantity, tetapi tidak boleh menguranginya di bawah jumlah yang dicadangkan. Lokasi yang sedang digunakan picking tidak dapat dipindahkan/dihapus sampai packing selesai. Formulir admin yang memakai quantity lama akan ditolak jika stok sudah berubah; muat ulang sebelum mengedit kembali. Penyesuaian stok oleh admin harus mengikuti stok fisik, termasuk unit yang sudah dipicking dan belum selesai packing.
+
+Migrasi otomatis mempertahankan lokasi lama, foto, order, dan progres picking. **Quantity barang lama ditandai belum diisi**, karena aplikasi sebelumnya tidak mencatat stok. Admin perlu mengisi quantity fisik per lokasi sebelum scan berikutnya atau menyelesaikan packing order lama. Unit yang telah dipicking pada order lama yang belum selesai ikut dicadangkan di lokasi lama; order yang sudah selesai tidak dipotong kembali.
 
 ## Pengaturan rak
 
@@ -75,7 +85,7 @@ Versi ini memakai satu proses aplikasi dengan SQLite dan upload lokal. Gunakan s
 
 Backup paling sederhana: hentikan server, salin direktori `data/` lengkap (termasuk SQLite dan file WAL/SHM jika ada), lalu mulai kembali. Jika menggunakan path terpisah, salin database dan seluruh `UPLOAD_DIR` bersama. Pulihkan keduanya ke lokasi yang sama karena metadata menyimpan path file absolut. Rahasiakan backup karena berisi order dan sesi login. Jangan menaruh upload di direktori `public/`.
 
-Tidak mencakup pengelolaan stok, pembuatan resi kurir, integrasi marketplace, atau multi-gudang. Migrasi rak berjalan otomatis saat aplikasi membuka database. Data SKU, foto, order, dan progres picking lama dipertahankan.
+Tidak mencakup pembelian/penerimaan stok otomatis, pembuatan resi kurir, integrasi marketplace, atau multi-gudang. Migrasi rak berjalan otomatis saat aplikasi membuka database. Data SKU, foto, order, dan progres picking lama dipertahankan.
 
 ## Data contoh opsional
 
