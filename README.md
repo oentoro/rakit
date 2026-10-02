@@ -49,6 +49,10 @@ Untuk membaca PDF dengan AI, isi `GEMINI_API_KEY` dan `GEMINI_MODEL`, lalu mulai
 
 Foto terkait dengan SKU, bukan order/rak. Gambar tersedia lewat endpoint terautentikasi. PDF maksimal 15 MB; foto JPEG/PNG/WebP maksimal 5 MB. Nomor order, airway bill, dan SKU unik; nol awal dan kapitalisasi kode dipertahankan.
 
+## Daftar produk
+
+Admin dan staff dapat membuka **Daftar produk** untuk mencari SKU atau nama barang, melihat lokasi rak/ambalan, dan status aktif. Ketuk foto untuk melihat gambar besar beserta nama dan SKU guna mencocokkan barang. Pengelolaan produk tetap dilakukan admin melalui **Barang & lokasi**.
+
 ## Pengaturan rak
 
 Buka **Barang & lokasi → Kelola rak** untuk menambah rak atau mengedit nama dan jumlah ambalan (1–1000). Label ambalan dibuat otomatis: A–Z, lalu AA, AB, dan seterusnya. Pilihan lokasi barang dan ringkasan gudang mengikuti konfigurasi terbaru.
