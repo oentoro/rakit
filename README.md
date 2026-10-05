@@ -65,7 +65,7 @@ Migrasi otomatis mempertahankan lokasi lama, foto, order, dan progres picking. *
 
 ## Stok opname
 
-Admin membuka **Stok opname** untuk mencari SKU/nama barang dan memfilter rak. Daftar menampilkan 20 produk per halaman, dengan formulir penghitungan untuk setiap rak/ambalan. Masukkan **Jumlah fisik** untuk melihat selisih terhadap stok sistem, tambahkan catatan bila perlu, lalu tekan **Simpan opname** untuk lokasi tersebut. Jumlah nol tetap valid; stok yang sebelumnya belum diisi dapat ditetapkan dari hasil penghitungan. Penghitungan yang sesuai dengan stok sistem juga dicatat.
+Admin dan staff warehouse membuka **Stok opname** untuk mencari SKU/nama barang dan memfilter rak. Daftar menampilkan 20 produk per halaman, dengan formulir penghitungan untuk setiap rak/ambalan. Masukkan **Jumlah fisik** untuk melihat selisih terhadap stok sistem, tambahkan catatan bila perlu, lalu tekan **Simpan opname** untuk lokasi tersebut. Jumlah nol tetap valid; stok yang sebelumnya belum diisi dapat ditetapkan dari hasil penghitungan. Penghitungan yang sesuai dengan stok sistem juga dicatat.
 
 Untuk kamera HP, gunakan **Hitung barang dengan QR → Aktifkan kamera**, lalu arahkan ke QR berisi SKU persis (kapitalisasi dan nol awal dipertahankan). Pencarian scan mencakup seluruh katalog, terlepas dari halaman, pencarian, atau filter rak saat ini. **Setiap scan menghitung satu unit:** scan pertama otomatis mengisi **Jumlah fisik** dengan `1`, lalu scan SKU yang sama menambah `1` untuk lokasi yang dipilih. Jika barang memiliki beberapa lokasi, pilih rak/ambalan untuk mencatat unit pertama sebelum scan unit selanjutnya. Hitungan setiap lokasi dipertahankan terpisah saat berpindah rak/ambalan. Jumlah fisik bisa dikoreksi manual; scan berikutnya melanjutkan dari angka tersebut.
 
@@ -73,7 +73,7 @@ Frame QR berulang dijeda; tekan **Scan unit berikutnya** untuk menghitung barang
 
 Hitung seluruh unit, termasuk yang sudah dipicking dan belum selesai packing. Jumlah fisik tidak boleh kurang dari stok yang dicadangkan. Jika stok atau lokasi berubah sejak formulir dibuka, penyimpanan ditolak: tekan **Muat ulang stok** lalu hitung kembali. Koreksi stok dan riwayat disimpan dalam satu transaksi.
 
-**Riwayat opname** menampilkan 50 penghitungan terakhir dari seluruh rak: SKU/nama barang, lokasi, stok sistem sebelumnya, jumlah fisik, selisih, catatan, pelaku, dan waktu WIB. Identitas barang/lokasi disimpan sesuai keadaan saat penghitungan sehingga riwayat tetap terbaca setelah data barang diubah. Halaman dan API opname hanya dapat diakses admin. Tabel riwayat dibuat otomatis tanpa mengubah stok atau data lama.
+**Riwayat opname** menampilkan 50 penghitungan terakhir dari seluruh rak: SKU/nama barang, lokasi, stok sistem sebelumnya, jumlah fisik, selisih, catatan, pelaku, dan waktu WIB. Identitas barang/lokasi disimpan sesuai keadaan saat penghitungan sehingga riwayat tetap terbaca setelah data barang diubah. Halaman dan API opname dapat diakses admin serta staff warehouse yang aktif; riwayat mencatat identitas akun yang menyimpan penghitungan. Tabel riwayat dibuat otomatis tanpa mengubah stok atau data lama.
 
 ## Pengaturan rak
 

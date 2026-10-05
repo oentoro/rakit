@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { QRCodeWriter,BarcodeFormat } from '@zxing/library';
 
 test.beforeAll(()=>{execFileSync('node',['--import','tsx','scripts/demo.ts'],{env:{...process.env,DATABASE_PATH:process.env.E2E_DATABASE_PATH,UPLOAD_DIR:'/tmp/picking-e2e-uploads',DEMO_PASSWORD:'testpassword123'},stdio:'pipe'});});
-test('admin counts stock, sees differences and history; stale submissions and staff access are rejected',async({page})=>{
+test('admin and staff can count stock; stale submissions and invalid origins are rejected',async({page})=>{
  const headers={origin:'http://127.0.0.1:3010'};
  await page.goto('/login');await page.getByLabel('Username').fill('admin.demo');await page.getByLabel('Password',{exact:true}).fill('testpassword123');await page.getByRole('button',{name:'Masuk ke gudang'}).click();
  await expect(page.getByRole('heading',{name:'Ringkasan gudang'})).toBeVisible();
@@ -22,8 +22,13 @@ test('admin counts stock, sees differences and history; stale submissions and st
  expect((await page.request.post('/api/stocktakes',{headers:{origin:'http://other.example'},data:payload})).status()).toBe(403);
  await page.setViewportSize({width:390,height:844});await page.reload();await expect(page.getByRole('heading',{name:'Stok opname',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.request.post('/api/auth/logout',{headers});await page.goto('/login');await page.getByLabel('Username').fill('staff.demo');await page.getByLabel('Password',{exact:true}).fill('testpassword123');await page.getByRole('button',{name:'Masuk ke gudang'}).click();await expect(page.getByRole('heading',{name:'Ringkasan gudang'})).toBeVisible();
- expect((await page.request.post('/api/stocktakes',{headers,data:payload})).status()).toBe(403);expect((await page.request.get('/api/stocktakes')).status()).toBe(403);
- await page.goto('/admin/stocktakes');await expect(page.getByRole('heading',{name:'Ringkasan gudang'})).toBeVisible();
+ await page.getByRole('link',{name:'Stok opname',exact:true}).click();await expect(page.getByRole('heading',{name:'Stok opname',exact:true})).toBeVisible();
+ expect((await page.request.post('/api/stocktakes',{headers,data:payload})).status()).toBe(409);expect((await page.request.get('/api/stocktakes')).status()).toBe(200);
+ await page.getByLabel('Kode manual').fill('OPNAME-E2E');await page.getByRole('button',{name:'Kirim kode'}).click();
+ const scanned=page.getByRole('region',{name:'Barang hasil scan'});await expect(scanned).toContainText('Barang hitung');await scanned.getByLabel('Lokasi opname OPNAME-E2E').selectOption(product.locations[0].id);
+ const staffCount=scanned.getByRole('form');await expect(staffCount.getByLabel('Jumlah fisik')).toHaveValue('1');await staffCount.getByRole('button',{name:'Simpan opname'}).click();
+ await expect(page.getByRole('region',{name:'Riwayat opname'})).toContainText('Staff Demo');
+ const history=await (await page.request.get('/api/stocktakes')).json();expect(history[0]).toMatchObject({actorName:'Staff Demo',quantity:1});
 });
 
 test('phone QR scans fill physical quantity, count one unit per rearm, keep location counts and save explicitly',async({page})=>{
@@ -60,5 +65,5 @@ test('phone QR scans fill physical quantity, count one unit per rearm, keep loca
  await page.getByLabel('Kode manual').fill(`${sku}-OTHER`);await page.getByRole('button',{name:'Kirim kode'}).click();await expect(scanned).toContainText('SKU lain');await expect(scanned.getByRole('form')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'/tmp/picking-stocktake-scanner-mobile.png',fullPage:true});
  await page.request.post('/api/auth/logout',{headers});await page.request.post('/api/auth/login',{headers,data:{username:'staff.demo',password:'testpassword123'}});
- expect((await page.request.get(`/api/stocktakes/product?sku=${sku}`)).status()).toBe(403);
+ expect((await page.request.get(`/api/stocktakes/product?sku=${sku}`)).status()).toBe(200);
 });

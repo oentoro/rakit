@@ -10,7 +10,7 @@ const schema=z.object({locationId:z.string().uuid(),expectedQuantity:count.nulla
 
 export function saveStocktake(actor:Actor,input:unknown):string {
  return inTransaction(()=>{
-  const currentActor=assertActiveActor(actor,['admin']),data=schema.parse(input),db=getDatabase();
+  const currentActor=assertActiveActor(actor),data=schema.parse(input),db=getDatabase();
   const location=db.prepare(`SELECT l.quantity,l.rack,l.shelf,l.product_id AS productId,p.sku,p.name,r.name AS rackName,
    COALESCE((SELECT SUM(quantity) FROM order_location_picks WHERE location_id=l.id),0) AS reservedQuantity
    FROM product_locations l JOIN products p ON p.id=l.product_id JOIN racks r ON r.id=l.rack WHERE l.id=?`).get(data.locationId);
@@ -29,7 +29,7 @@ export function saveStocktake(actor:Actor,input:unknown):string {
 }
 
 export function listStocktakes(actor:Actor):Stocktake[] {
- assertActiveActor(actor,['admin']);
+ assertActiveActor(actor);
  return getDatabase().prepare(`SELECT id,location_id AS locationId,sku,name,rack_name AS rackName,shelf,
   before_quantity AS beforeQuantity,quantity,note,actor_id AS actorId,actor_name AS actorName,created_at AS createdAt
   FROM stocktakes ORDER BY created_at DESC,rowid DESC LIMIT 50`).all().map(row=>({...row})) as Stocktake[];

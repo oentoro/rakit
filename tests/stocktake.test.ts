@@ -7,6 +7,7 @@ import * as stocktake from '../src/lib/stocktake';
 import { getDatabase,openDatabase } from '../src/lib/db';
 import { createOrder } from '../src/lib/orders';
 import { claimOrder,scanOrder } from '../src/lib/picking';
+import { setStaffActive } from '../src/lib/auth';
 
 function setup(quantity:number|null=10){
  const ctx=fixture();
@@ -50,9 +51,17 @@ test('stocktake protects picking reservations and rolls back history on failure'
 });
 test('stocktake rejects unauthorized actors, invalid counts and missing locations',()=>{
  const {admin,staff,input,product}=setup();
+ setStaffActive(admin,staff.id,false);
  expect(()=>stocktake.saveStocktake(staff,input)).toThrow();expect(()=>stocktake.listStocktakes(staff)).toThrow();
  for(const change of [{quantity:-1},{quantity:1.5},{quantity:Number.MAX_SAFE_INTEGER},{quantity:Number.MAX_SAFE_INTEGER+1},{quantity:null},{expectedQuantity:undefined},{note:'x'.repeat(501)},{locationId:randomUUID()}])expect(()=>stocktake.saveStocktake(admin,{...input,...change})).toThrow();
  expect(product().locations[0].quantity).toBe(10);expect(stocktake.listStocktakes(admin)).toHaveLength(0);
+});
+test('warehouse staff can save stocktake and the history records their authenticated identity',()=>{
+ const {admin,staff,input,product}=setup();
+ stocktake.saveStocktake({...staff,name:'Admin palsu',role:'admin'},input);
+ expect(product().locations[0].quantity).toBe(8);
+ expect(stocktake.listStocktakes(staff)[0]).toMatchObject({actorId:staff.id,actorName:'Staff',quantity:8});
+ expect(stocktake.listStocktakes(admin)[0]).toMatchObject({actorId:staff.id,actorName:'Staff'});
 });
 test('stock correction rolls back when recording its history fails',()=>{
  const {admin,input,product}=setup();
