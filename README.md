@@ -63,6 +63,14 @@ Admin dapat mengoreksi quantity, tetapi tidak boleh menguranginya di bawah jumla
 
 Migrasi otomatis mempertahankan lokasi lama, foto, order, dan progres picking. **Quantity barang lama ditandai belum diisi**, karena aplikasi sebelumnya tidak mencatat stok. Admin perlu mengisi quantity fisik per lokasi sebelum scan berikutnya atau menyelesaikan packing order lama. Unit yang telah dipicking pada order lama yang belum selesai ikut dicadangkan di lokasi lama; order yang sudah selesai tidak dipotong kembali.
 
+## Stok opname
+
+Admin membuka **Stok opname** untuk mencari SKU/nama barang dan memfilter rak. Daftar menampilkan 20 produk per halaman, dengan formulir penghitungan untuk setiap rak/ambalan. Masukkan **Jumlah fisik** untuk melihat selisih terhadap stok sistem, tambahkan catatan bila perlu, lalu tekan **Simpan opname** untuk lokasi tersebut. Jumlah nol tetap valid; stok yang sebelumnya belum diisi dapat ditetapkan dari hasil penghitungan. Penghitungan yang sesuai dengan stok sistem juga dicatat.
+
+Hitung seluruh unit, termasuk yang sudah dipicking dan belum selesai packing. Jumlah fisik tidak boleh kurang dari stok yang dicadangkan. Jika stok atau lokasi berubah sejak formulir dibuka, penyimpanan ditolak: tekan **Muat ulang stok** lalu hitung kembali. Koreksi stok dan riwayat disimpan dalam satu transaksi.
+
+**Riwayat opname** menampilkan 50 penghitungan terakhir dari seluruh rak: SKU/nama barang, lokasi, stok sistem sebelumnya, jumlah fisik, selisih, catatan, pelaku, dan waktu WIB. Identitas barang/lokasi disimpan sesuai keadaan saat penghitungan sehingga riwayat tetap terbaca setelah data barang diubah. Halaman dan API opname hanya dapat diakses admin. Tabel riwayat dibuat otomatis tanpa mengubah stok atau data lama.
+
 ## Pengaturan rak
 
 Buka **Barang & lokasi → Kelola rak** untuk menambah rak atau mengedit nama dan jumlah ambalan (1–1000). Label ambalan dibuat otomatis: A–Z, lalu AA, AB, dan seterusnya. Pilihan lokasi barang dan ringkasan gudang mengikuti konfigurasi terbaru.

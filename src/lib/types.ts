@@ -11,3 +11,4 @@ export type OrderDetail = {id:string;orderNumber:string;airwayBill:string|null;s
 export type ScanResult = {order:OrderDetail;message:string;replayed:boolean};
 
 export type ProductPage = {products:Product[];total:number;totalPages:number;page:number;pageSize:number};
+export type Stocktake = {id:string;locationId:string;sku:string;name:string;rackName:string;shelf:string;beforeQuantity:number|null;quantity:number;note:string;actorId:string;actorName:string;createdAt:number};

@@ -18,3 +18,19 @@ CREATE TABLE IF NOT EXISTS scan_requests (request_id TEXT PRIMARY KEY, order_id 
 CREATE TABLE IF NOT EXISTS product_locations (id TEXT PRIMARY KEY, product_id TEXT NOT NULL REFERENCES products(id), rack INTEGER NOT NULL, shelf TEXT NOT NULL, quantity INTEGER CHECK(quantity IS NULL OR (quantity>=0 AND typeof(quantity)='integer')), UNIQUE(product_id,rack,shelf), FOREIGN KEY(rack,shelf) REFERENCES rack_shelves(rack,shelf));
 CREATE TABLE IF NOT EXISTS order_location_picks (order_id TEXT NOT NULL, product_id TEXT NOT NULL, location_id TEXT NOT NULL REFERENCES product_locations(id), quantity INTEGER NOT NULL CHECK(quantity>0), PRIMARY KEY(order_id,product_id,location_id), FOREIGN KEY(order_id,product_id) REFERENCES order_items(order_id,product_id));
 CREATE INDEX IF NOT EXISTS picks_location ON order_location_picks(location_id);
+
+CREATE TABLE IF NOT EXISTS stocktakes (
+ id TEXT PRIMARY KEY,
+ location_id TEXT NOT NULL,
+ sku TEXT NOT NULL,
+ name TEXT NOT NULL,
+ rack_name TEXT NOT NULL,
+ shelf TEXT NOT NULL,
+ before_quantity INTEGER,
+ quantity INTEGER NOT NULL CHECK(quantity>=0 AND typeof(quantity)='integer'),
+ note TEXT NOT NULL,
+ actor_id TEXT NOT NULL REFERENCES users(id),
+ actor_name TEXT NOT NULL,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS stocktakes_created ON stocktakes(created_at DESC);
