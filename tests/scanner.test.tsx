@@ -44,14 +44,3 @@ test('network retry keeps the original location even after selection changes and
  fireEvent.change(screen.getByLabelText('Kode manual'),{target:{value:'001A'}});fireEvent.click(screen.getByRole('button',{name:'Kirim kode'}));await screen.findByRole('button',{name:'Coba ulang scan'});
  view.unmount();render(<CameraScanner kind="sku" storageKey="location-test" locationBySku={{'001A':'other-location'}} onScan={onScan}/>);fireEvent.click(screen.getByRole('button',{name:'Coba ulang scan'}));await screen.findByText('Tersimpan');expect(locations).toEqual(['first-location','first-location']);
 });
-
-test('stocktake lookup scans a SKU once until explicitly rearmed with lookup labels',async()=>{
- const codes:string[]=[];
- render(<CameraScanner kind="sku" mode="lookup" storageKey="stocktake" onScan={async code=>{codes.push(code);return {message:'Barang ditemukan'};}}/>);
- expect(screen.queryByText('1 scan = 1 unit')).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'Aktifkan kamera'}));await waitFor(()=>expect(camera.callback).toBeDefined());
- camera.callback!({getText:()=> 'COUNT'});camera.callback!({getText:()=> 'COUNT'});
- await screen.findByText('Barang ditemukan');expect(codes).toEqual(['COUNT']);
- fireEvent.click(screen.getByRole('button',{name:'Scan barang berikutnya'}));camera.callback!({getText:()=> 'COUNT-OTHER'});
- await waitFor(()=>expect(codes).toEqual(['COUNT','COUNT-OTHER']));
-});

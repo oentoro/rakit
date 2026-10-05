@@ -6,8 +6,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { ApiError } from '@/lib/client';
 type Pending={code:string;requestId:string;locationId?:string};
-type Props={kind:'sku'|'airwayBill';mode?:'unit'|'lookup';storageKey?:string;locationBySku?:Record<string,string>;onScan:(code:string,requestId:string,locationId?:string)=>Promise<{message:string}>};
-export function CameraScanner({kind,onScan,mode='unit',storageKey='scanner',locationBySku={}}:Props) {
+type Props={kind:'sku'|'airwayBill';storageKey?:string;locationBySku?:Record<string,string>;onScan:(code:string,requestId:string,locationId?:string)=>Promise<{message:string}>};
+export function CameraScanner({kind,onScan,storageKey='scanner',locationBySku={}}:Props) {
   const [ready,setReady]=useState(false);
   const [open,setOpen]=useState(false);const [phase,setPhase]=useState<'idle'|'starting'|'ready'|'sending'|'paused'|'uncertain'>('idle');
   const [message,setMessage]=useState('');const [error,setError]=useState('');const [manual,setManual]=useState('');
@@ -28,7 +28,7 @@ export function CameraScanner({kind,onScan,mode='unit',storageKey='scanner',loca
     } catch(cause) {
       const known=cause instanceof ApiError&&cause.status<500;
       if(known){pending.current=null;try{sessionStorage.removeItem(key);}catch{}}
-      if(mounted.current){setError(known?cause.message:mode==='lookup'?'Koneksi terputus atau barang belum ditemukan. Coba ulang pencarian barang.':'Koneksi terputus atau hasil belum diketahui. Coba ulang scan yang sama sebelum mengambil unit berikutnya.');setPhase(known?'paused':'uncertain');}
+      if(mounted.current){setError(known?cause.message:'Koneksi terputus atau hasil belum diketahui. Coba ulang scan yang sama sebelum mengambil unit berikutnya.');setPhase(known?'paused':'uncertain');}
     } finally {inflight.current=false;}
   }
   async function startCamera() {
@@ -52,13 +52,13 @@ export function CameraScanner({kind,onScan,mode='unit',storageKey='scanner',loca
   function rearm(){if(inflight.current||pending.current)return;setMessage('');setError('');if(controls.current){armed.current=true;setPhase('ready');}else void startCamera();}
   const blocked=!ready||phase==='sending'||phase==='starting'||phase==='uncertain';
   return <section className="scanner-panel">
-    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 font-semibold"><ScanLine className="size-5 text-emerald-700"/>{kind==='sku'?'Scan QR barang':'Scan barcode resi'}</div><span className="text-xs text-muted-foreground">{mode==='lookup'?'Cari SKU':kind==='sku'?'1 scan = 1 unit':'Airway bill'}</span></div>
+    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 font-semibold"><ScanLine className="size-5 text-emerald-700"/>{kind==='sku'?'Scan QR barang':'Scan barcode resi'}</div><span className="text-xs text-muted-foreground">{kind==='sku'?'1 scan = 1 unit':'Airway bill'}</span></div>
     <div className={open?'camera-preview mt-4':'hidden'}><div ref={feed} className="camera-feed"/><div className="scan-target"/><span className="camera-hint">{phase==='ready'?'Arahkan kode ke dalam bingkai':phase==='starting'?'Menyiapkan kamera…':'Scanner dijeda'}</span></div>
     <div className="mt-4 flex flex-wrap gap-2">
-      {phase==='paused'?<Button type="button" onClick={rearm} className="h-11"><ScanLine/>{mode==='lookup'?'Scan barang berikutnya':'Scan unit berikutnya'}</Button>:!open&&phase!=='uncertain'?<Button type="button" onClick={startCamera} disabled={blocked} className="h-11"><Camera/>Aktifkan kamera</Button>:null}
+      {phase==='paused'?<Button type="button" onClick={rearm} className="h-11"><ScanLine/>Scan unit berikutnya</Button>:!open&&phase!=='uncertain'?<Button type="button" onClick={startCamera} disabled={blocked} className="h-11"><Camera/>Aktifkan kamera</Button>:null}
       {open&&<Button type="button" variant="outline" className="h-11" disabled={phase==='sending'} onClick={()=>{stopCamera();setOpen(false);if(phase==='ready'||phase==='starting')setPhase('idle');}}><CameraOff/>Tutup kamera</Button>}
       {phase==='uncertain'&&<Button type="button" className="h-11" onClick={()=>pending.current&&void send(pending.current)}>Coba ulang scan</Button>}
-      {phase==='sending'&&<span className="flex items-center gap-2 text-sm"><LoaderCircle className="size-4 animate-spin"/>{mode==='lookup'?'Mencari barang…':'Menyimpan scan…'}</span>}
+      {phase==='sending'&&<span className="flex items-center gap-2 text-sm"><LoaderCircle className="size-4 animate-spin"/>Menyimpan scan…</span>}
     </div>
     {message&&<p role="status" className="notice success mt-3">{message}</p>}{error&&<p role="alert" className="notice error mt-3">{error}</p>}
     <form className="mt-5 border-t pt-4" onSubmit={e=>{e.preventDefault();if(!blocked&&manual.trim())void send({code:manual.trim(),requestId:crypto.randomUUID(),locationId:selectedLocations.current[manual.trim()]||undefined});}}><Label htmlFor={`manual-${kind}`} className="mb-2"><Keyboard className="size-4"/>Kode manual</Label><div className="flex gap-2"><Input id={`manual-${kind}`} value={manual} onChange={e=>setManual(e.target.value)} placeholder={kind==='sku'?'Masukkan SKU jika kamera gagal':'Masukkan nomor airway bill'} disabled={blocked} autoComplete="off" className="h-11"/><Button type="submit" variant="outline" disabled={blocked||!manual.trim()} className="h-11">Kirim kode<ArrowRight/></Button></div></form>
