@@ -2,6 +2,7 @@ import { expect,test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { fixture } from './helpers';
 import { saveProduct,listProducts } from '../src/lib/catalog';
+import * as catalog from '../src/lib/catalog';
 import * as stocktake from '../src/lib/stocktake';
 import { getDatabase,openDatabase } from '../src/lib/db';
 import { createOrder } from '../src/lib/orders';
@@ -58,4 +59,13 @@ test('stock correction rolls back when recording its history fails',()=>{
  getDatabase().exec("CREATE TRIGGER reject_stocktake BEFORE INSERT ON stocktakes BEGIN SELECT RAISE(ABORT,'history unavailable'); END");
  expect(()=>stocktake.saveStocktake(admin,input)).toThrow(/history unavailable/);
  expect(product().locations[0].quantity).toBe(10);expect(stocktake.listStocktakes(admin)).toHaveLength(0);
+});
+test('QR lookup matches the complete SKU across the catalog and preserves locations without changing stock',()=>{
+ const {admin,product,id}=setup();
+ for(let i=0;i<21;i++)saveProduct(admin,null,{sku:`A-${i}`,name:'Jinjang katalog',active:true,locations:[{rack:1,shelf:'A',quantity:1}]});
+ saveProduct(admin,null,{sku:'COUNT-OTHER',name:'SKU mirip',active:true,locations:[{rack:1,shelf:'A',quantity:99}]});
+ const found=catalog.findProductBySku(admin,'COUNT');
+ expect(found).toMatchObject({id,sku:'COUNT',totalQuantity:15});expect(found!.locations.map(l=>l.quantity)).toEqual([10,5]);
+ expect(catalog.findProductBySku(admin,'count')).toBeNull();expect(catalog.findProductBySku(admin,'COUN')).toBeNull();
+ expect(product().locations.map(l=>l.quantity)).toEqual([10,5]);expect(stocktake.listStocktakes(admin)).toHaveLength(0);
 });

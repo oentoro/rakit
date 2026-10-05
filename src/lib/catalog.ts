@@ -55,6 +55,9 @@ function hydrateProducts(rows:Record<string,unknown>[]):Product[]{
 export function listProducts(actor:Actor):Product[]{
  assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} ORDER BY p.sku`).all());
 }
+export function findProductBySku(actor:Actor,sku:string):Product|null{
+ assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} WHERE p.sku=?`).all(sku))[0]??null;
+}
 export function paginateProducts(actor:Actor,filter:{search?:string;page?:number;rack?:number|null}={}):ProductPage{
  assertActiveActor(actor);const db=getDatabase(),search=filter.search?.trim()||'',pageSize=20;
  const rack=Number.isSafeInteger(filter.rack)&&(filter.rack??0)>0?filter.rack!:null;
