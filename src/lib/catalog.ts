@@ -52,8 +52,10 @@ function hydrateProducts(rows:Record<string,unknown>[]):Product[]{
   const locations=productLocations(String(row.id));return {...row,active:!!row.active,locations,totalQuantity:locations.some(l=>l.quantity===null)?null:locations.reduce((sum,l)=>sum+(l.quantity??0),0)};
  }) as Product[];
 }
+/** Unchecked read for background jobs (no user session); callers own authorization. */
+export function allProducts():Product[]{return hydrateProducts(getDatabase().prepare(`${productSelect} ORDER BY p.sku`).all());}
 export function listProducts(actor:Actor):Product[]{
- assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} ORDER BY p.sku`).all());
+ assertActiveActor(actor);return allProducts();
 }
 export function findProductBySku(actor:Actor,sku:string):Product|null{
  assertActiveActor(actor);return hydrateProducts(getDatabase().prepare(`${productSelect} WHERE p.sku=?`).all(sku))[0]??null;

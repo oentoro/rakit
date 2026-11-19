@@ -4,6 +4,7 @@ import { getDatabase,inTransaction } from './db';
 import { fail } from './errors';
 import { getFile } from './files';
 import { getOrder,recordActivity } from './orders';
+import { isInstant } from './utils';
 import type { Actor,OrderDetail,ScanResult } from './types';
 export function claimOrder(actor:Actor,id:string):OrderDetail {
   return inTransaction(()=>{assertActiveActor(actor);const order=getOrder(actor,id);
@@ -48,7 +49,9 @@ export function scanOrder(actor:Actor,id:string,input:z.input<typeof scanSchema>
       if(!pending.n) db.prepare("UPDATE orders SET status='packing',updated_at=? WHERE id=?").run(Date.now(),id);
       recordActivity(actor,id,`Barang diambil • ${location.rackName}/${location.shelf}`,data.code);message=`${item.name}: +1 unit${!pending.n?' • Picking lengkap, lanjut packing.':''}`;
     } else {
-      if(!order.airwayBill||data.code!==order.airwayBill) fail(422,'Nomor resi tidak sesuai dengan order.');
+      // Instant/sameday labels carry no scannable resi barcode, only a short pickup code: match the order number instead.
+      if(isInstant(order.airwayBill)){if(data.code!==order.orderNumber) fail(422,'Nomor pesanan tidak sesuai dengan order.');}
+      else if(!order.airwayBill||data.code!==order.airwayBill) fail(422,'Nomor resi tidak sesuai dengan order.');
       if(order.status==='completed') {message='Order ini sudah selesai.';replayed=true;}
       else {
         if(order.status!=='packing'||order.items.some(i=>i.pickedQty!==i.qty)) fail(409,'Lengkapi picking sebelum scan resi.');

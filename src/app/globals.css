@@ -171,6 +171,7 @@ a, button, input, select { touch-action: manipulation; }
 .metric-note {font-size:10px;color:#99a39c;}
 .metric-icon {display:inline-grid;place-items:center;width:35px;height:35px;border-radius:10px;flex-shrink:0;}
 .metric-icon.amber {background:#fff7e8;color:#b38a39;}
+.metric-icon.red {background:#fdecec;color:#b42318;}
 .metric-icon.blue {background:#edf5fc;color:#648bab;}
 .metric-icon.violet {background:#f3effa;color:#9681b0;}
 .metric-icon.emerald {background:#ecf6ef;color:#51966b;}
@@ -200,6 +201,18 @@ a, button, input, select { touch-action: manipulation; }
 .status-badge.picking {background:#eff6fd;border-color:#dfeaf7;color:#6085ac;}
 .status-badge.packing {background:#f5f0fb;border-color:#e9e0f5;color:#9680b1;}
 .status-badge.completed {background:#eff8f0;border-color:#dfede1;color:#5b946a;}
+.instant-badge {display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 7px;border-radius:5px;background:#fdecec;border:1px solid #f6caca;color:#b42318;font-size:10px;font-weight:600;white-space:nowrap;vertical-align:middle;}
+.orders-table tr.priority-order td {background:#fff6f5;}
+.dashboard-grid {display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:17px;}
+@media(max-width:900px){.dashboard-grid{grid-template-columns:1fr;}}
+.trend-chart {display:flex;align-items:stretch;gap:10px;height:220px;padding:20px 23px 16px;}
+.trend-col {flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;min-width:0;}
+.trend-bar {width:100%;max-width:36px;min-height:2px;background:#3f8f61;border-radius:4px 4px 0 0;}
+.trend-col:hover .trend-bar {background:#2c6e48;}
+.trend-value {font-size:11px;color:#4b5a50;min-height:14px;}
+.trend-label {font-size:10px;color:#98a39b;white-space:nowrap;}
+.orders-table tr.priority-order td:first-child {box-shadow:inset 3px 0 0 #d92d20;}
+.mobile-order.priority-order {background:#fff6f5;border-color:#f6caca;box-shadow:inset 3px 0 0 #d92d20;}
 .location-summary {margin-top:24px;border:1px solid #e3eae5;border-radius:11px;padding:21px 23px;background:#f2f6f2;display:flex;justify-content:space-between;align-items:center;gap:15px;}
 .location-summary>div {display:flex;gap:14px;align-items:center;}
 .location-summary h3 {font-size:12px;font-weight:600;color:#546c59;}

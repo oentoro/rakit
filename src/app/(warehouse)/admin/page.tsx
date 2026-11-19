@@ -1,0 +1,22 @@
+import Link from 'next/link';
+import { PackagePlus,CheckCheck,Hourglass,Zap,ArrowRight } from 'lucide-react';
+import { pageActor } from '@/lib/server-actor';
+import { adminDashboard } from '@/lib/dashboard';
+const dayLabel=(day:number)=>new Date(day).toLocaleDateString('id-ID',{weekday:'short',day:'numeric'});
+export default async function AdminDashboard(){
+ const actor=await pageActor(['admin']);const d=adminDashboard(actor);const max=Math.max(1,...d.trend.map(t=>t.completed));
+ const metrics=[{label:'Order masuk hari ini',value:d.today.created,icon:PackagePlus,color:'blue',href:'/admin/orders'},{label:'Selesai hari ini',value:d.today.completed,icon:CheckCheck,color:'emerald',href:'/?status=completed'},{label:'Belum selesai',value:d.today.open,icon:Hourglass,color:'amber',href:'/'},{label:'Instant / sameday tertunda',value:d.today.instantOpen,icon:Zap,color:'red',href:'/'}];
+ const stockList=(title:string,items:{sku:string;name:string}[],empty:string)=><div className="p-5"><h3 className="mb-2 text-sm font-semibold">{title} <span className="subtle-pill ml-1">{items.length}</span></h3>{items.length?<ul className="space-y-1 text-sm">{items.slice(0,8).map(p=><li key={p.sku}><strong>{p.sku}</strong> <span className="text-muted-foreground">{p.name}</span></li>)}{items.length>8&&<li className="text-xs text-muted-foreground">+{items.length-8} SKU lainnya</li>}</ul>:<p className="text-sm text-muted-foreground">{empty}</p>}</div>;
+ return <><div className="page-heading"><div><span className="eyebrow">KHUSUS ADMIN</span><h1>Dashboard admin</h1><p>Kinerja gudang hari ini dan hal yang perlu ditindaklanjuti.</p></div></div>
+ <div className="metric-grid">{metrics.map(({label,value,icon:Icon,color,href})=><Link href={href} className="metric-card" key={label}><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">{label}</span><span className={`metric-icon ${color}`}><Icon className="size-[18px]"/></span></div><strong>{value.toString().padStart(2,'0')}</strong></Link>)}</div>
+ <div className="dashboard-grid">
+  <section className="surface"><div className="section-heading"><div><h2>Order selesai, 7 hari terakhir</h2><p>Total {d.trend.reduce((n,t)=>n+t.completed,0)} order.</p></div></div>
+   <div className="trend-chart" role="img" aria-label={`Order selesai per hari: ${d.trend.map(t=>`${dayLabel(t.day)} ${t.completed}`).join(', ')}`}>{d.trend.map(t=><div key={t.day} className="trend-col" title={`${dayLabel(t.day)}: ${t.completed} order selesai`}><span className="trend-value">{t.completed===max&&t.completed>0?t.completed:''}</span><div className="trend-bar" style={{height:`${t.completed/max*75}%`}}/><span className="trend-label">{dayLabel(t.day)}</span></div>)}</div></section>
+  <section className="surface"><div className="section-heading"><div><h2>Kinerja staff</h2><p>Order selesai dipacking hari ini & order yang sedang dipegang.</p></div></div>
+   <table className="orders-table"><thead><tr><th>STAFF</th><th>SELESAI HARI INI</th><th>SEDANG DIKERJAKAN</th></tr></thead><tbody>{d.staff.map(s=><tr key={s.id}><td><strong>{s.name}</strong></td><td>{s.completedToday}</td><td>{s.inProgress}</td></tr>)}</tbody></table></section>
+ </div>
+ <section className="surface mt-6"><div className="section-heading"><div><h2>Stok perlu perhatian</h2><p>SKU aktif yang stoknya habis atau belum pernah dihitung.</p></div><Link href="/admin/stocktakes" className="flex items-center gap-1 text-sm text-emerald-700">Stok opname<ArrowRight className="size-4"/></Link></div>
+  <div className="grid md:grid-cols-2">{stockList('Stok habis',d.stock.empty,'Tidak ada SKU yang habis.')}{stockList('Belum dihitung',d.stock.uncounted,'Semua SKU sudah dihitung.')}</div></section>
+ <section className="surface mt-6"><div className="section-heading"><div><h2>Stok terbanyak</h2><p>{d.stock.most.length} SKU aktif dengan jumlah stok paling besar.</p></div><Link href="/admin/products" className="flex items-center gap-1 text-sm text-emerald-700">Katalog<ArrowRight className="size-4"/></Link></div>
+  {d.stock.most.length?<table className="orders-table"><thead><tr><th>SKU</th><th>NAMA</th><th>STOK</th></tr></thead><tbody>{d.stock.most.map(p=><tr key={p.sku}><td><strong>{p.sku}</strong></td><td>{p.name}</td><td>{p.quantity}</td></tr>)}</tbody></table>:<p className="p-5 text-sm text-muted-foreground">Belum ada SKU yang punya stok.</p>}</section></>;
+}

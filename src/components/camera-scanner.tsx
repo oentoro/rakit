@@ -52,7 +52,7 @@ export function CameraScanner({kind,onScan,storageKey='scanner',locationBySku={}
   function rearm(){if(inflight.current||pending.current)return;setMessage('');setError('');if(controls.current){armed.current=true;setPhase('ready');}else void startCamera();}
   const blocked=!ready||phase==='sending'||phase==='starting'||phase==='uncertain';
   return <section className="scanner-panel">
-    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 font-semibold"><ScanLine className="size-5 text-emerald-700"/>{kind==='sku'?'Scan QR barang':'Scan barcode resi'}</div><span className="text-xs text-muted-foreground">{kind==='sku'?'1 scan = 1 unit':'Airway bill'}</span></div>
+    <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 font-semibold"><ScanLine className="size-5 text-emerald-700"/>{kind==='sku'?'Scan QR barang':'Scan barcode resi / no. pesanan'}</div><span className="text-xs text-muted-foreground">{kind==='sku'?'1 scan = 1 unit':'Airway bill'}</span></div>
     <div className={open?'camera-preview mt-4':'hidden'}><div ref={feed} className="camera-feed"/><div className="scan-target"/><span className="camera-hint">{phase==='ready'?'Arahkan kode ke dalam bingkai':phase==='starting'?'Menyiapkan kamera…':'Scanner dijeda'}</span></div>
     <div className="mt-4 flex flex-wrap gap-2">
       {phase==='paused'?<Button type="button" onClick={rearm} className="h-11"><ScanLine/>Scan unit berikutnya</Button>:!open&&phase!=='uncertain'?<Button type="button" onClick={startCamera} disabled={blocked} className="h-11"><Camera/>Aktifkan kamera</Button>:null}

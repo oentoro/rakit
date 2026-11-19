@@ -1,5 +1,7 @@
-import { afterEach,expect,test,vi } from 'vitest';
+import { afterEach,beforeEach,expect,test,vi } from 'vitest';
 import { extractOrders } from '../src/lib/ai';
+import { fixture } from './helpers';
+beforeEach(()=>{fixture();});
 afterEach(()=>vi.unstubAllEnvs());
 function configured(){vi.stubEnv('GEMINI_API_KEY','private-key');vi.stubEnv('GEMINI_MODEL','test-model');}
 function response(data:unknown){return new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify(data)}]}}]}),{status:200});}
@@ -21,4 +23,7 @@ test('malformed AI qty and page indexes are rejected rather than automatically c
  configured();for(const [qty,pages] of [[-1,[1]],[1,[3]]] as [number,number[]][]) {
   await expect(extractOrders(new Uint8Array([1]),2,{fetch:async()=>response({orders:[{orderNumber:'O',airwayBill:'R',receiptPages:pages,items:[{sku:'A',name:'A',qty}]}]})})).rejects.toThrow();
  }
+});
+test('provider status maps to a specific admin-facing reason',async()=>{
+ configured();await expect(extractOrders(new Uint8Array([1]),1,{fetch:async()=>new Response('{}',{status:402})})).rejects.toThrow(/Kredit\/billing Gemini habis/);
 });

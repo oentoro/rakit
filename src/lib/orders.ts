@@ -43,6 +43,17 @@ export function updateOrder(actor:Actor,id:string,input:OrderInput):void {
     recordActivity(actor,id,'Order diperbarui');
   });} catch(error) {databaseError(error);}
 }
+export function orderIdByNumber(orderNumber:string):string|null{return (getDatabase().prepare('SELECT id FROM orders WHERE order_number=?').get(orderNumber)?.id as string)??null;}
+/** Marketplace cancellation: a waiting order is removed (nothing picked yet); a started one is only flagged once so staff can put items back. */
+export function cancelOrder(actor:Actor,id:string,reason:string):'deleted'|'flagged'|null{
+  return inTransaction(()=>{
+    assertActiveActor(actor,['admin']);const db=getDatabase();const row=db.prepare('SELECT status FROM orders WHERE id=?').get(id);
+    if(!row||db.prepare('SELECT 1 FROM activities WHERE order_id=? AND action=?').get(id,reason))return null;
+    if(row.status!=='waiting'){recordActivity(actor,id,reason);return 'flagged';}
+    for(const table of ['scan_requests','order_location_picks','activities','order_items'])db.prepare(`DELETE FROM ${table} WHERE order_id=?`).run(id);
+    db.prepare('DELETE FROM orders WHERE id=?').run(id);return 'deleted';
+  });
+}
 export function getOrder(actor:Actor,id:string):OrderDetail {
   assertActiveActor(actor);const db=getDatabase();
   const row=db.prepare('SELECT o.id,o.order_number AS orderNumber,o.airway_bill AS airwayBill,o.status,o.assignee_id AS assigneeId,u.name AS assigneeName,o.pdf_file_id AS pdfFileId,o.receipt_pages AS receiptPages,o.created_at AS createdAt,o.completed_at AS completedAt FROM orders o LEFT JOIN users u ON u.id=o.assignee_id WHERE o.id=?').get(id);

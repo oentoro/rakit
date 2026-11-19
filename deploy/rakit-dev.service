@@ -1,0 +1,17 @@
+# Dev server with hot reload: code changes apply without `npm run build`. Own database (data-dev/); next dev builds into .next/dev, apart from the production build.
+# Install: sudo cp deploy/rakit-dev.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now rakit-dev
+[Unit]
+Description=Rakit Warehouse App (dev)
+After=network.target
+
+[Service]
+Type=simple
+User=oen
+WorkingDirectory=/home/oen/rakit
+Environment=NODE_ENV=development
+ExecStart=/home/oen/.nvm/versions/node/v24.21.0/bin/node /home/oen/rakit/node_modules/next/dist/bin/next dev --webpack --hostname 0.0.0.0 --port 3005
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

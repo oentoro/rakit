@@ -5,6 +5,8 @@ PRAGMA busy_timeout=5000;
 CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT NOT NULL, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','staff')), active INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), expires_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts (username TEXT NOT NULL, attempted_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS channel_stock (channel TEXT NOT NULL, sku TEXT NOT NULL, pushed_qty INTEGER NOT NULL, pushed_at INTEGER NOT NULL, PRIMARY KEY(channel,sku));
 CREATE INDEX IF NOT EXISTS attempts_username ON login_attempts(username,attempted_at);
 CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), kind TEXT NOT NULL CHECK(kind IN ('photo','pdf')), name TEXT NOT NULL, mime_type TEXT NOT NULL, path TEXT NOT NULL, page_count INTEGER, created_at INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS racks (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE, shelf_count INTEGER NOT NULL CHECK(shelf_count > 0));
